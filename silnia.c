@@ -1,4 +1,3 @@
-#include <unistd.h>
 #include "cacti.h"
 
 message_t spawn_msg;
@@ -43,8 +42,9 @@ void factorial_prompt (void **stateptr, size_t nbytes, void *data) {
 }
 
 int main() {
-    int n = 13;
-    //scanf("%d", &n);
+    int n;
+    scanf("%d", &n);
+
     if (pthread_cond_init(&ready, NULL) != 0)
         return -1;
 
