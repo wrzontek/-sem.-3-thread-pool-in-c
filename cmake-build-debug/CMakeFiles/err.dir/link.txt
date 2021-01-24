@@ -1,0 +1,2 @@
+/usr/bin/ar.exe qc liberr.a  CMakeFiles/err.dir/err.c.o
+/usr/bin/ranlib.exe liberr.a

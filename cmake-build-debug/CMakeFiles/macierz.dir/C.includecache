@@ -1,0 +1,16 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/cygdrive/c/Users/Adi/Desktop/am418419/cacti.h
+stddef.h
+-
+
+/cygdrive/c/Users/Adi/Desktop/am418419/macierz.c
+cacti.h
+/cygdrive/c/Users/Adi/Desktop/am418419/cacti.h
+

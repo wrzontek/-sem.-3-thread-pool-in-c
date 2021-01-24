@@ -1,0 +1,1 @@
+/usr/bin/cc -g -Wall -Wextra -pthread -g  -Wl,--enable-auto-import CMakeFiles/silnia.dir/silnia.c.o  -o silnia.exe -Wl,--out-implib,libsilnia.dll.a -Wl,--major-image-version,0,--minor-image-version,0  libcacti.a 

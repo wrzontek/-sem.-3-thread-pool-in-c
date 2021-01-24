@@ -1,0 +1,1 @@
+/usr/bin/cc -g -Wall -Wextra -pthread -g  -Wl,--enable-auto-import CMakeFiles/macierz.dir/macierz.c.o  -o macierz.exe -Wl,--out-implib,libmacierz.dll.a -Wl,--major-image-version,0,--minor-image-version,0  libcacti.a 
