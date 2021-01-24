@@ -141,9 +141,10 @@ static void *pool_worker() {
 
             actor_info = &actors[id];
 
-            //if (actor_info->dead)
-            //    break;
-            //todo
+            if (actor_info->dead) {
+                pthread_mutex_unlock(&actor_array_mutex);
+                continue;
+            }
 
             pthread_setspecific(actor_key, (void *)(&id));
 
@@ -181,8 +182,11 @@ static void *pool_worker() {
 
                 actor_info->dead = true;
                 dead_actor_count++;
+                if (dead_actor_count == actor_count) {
+                    pool->stop = true;
+                    pthread_cond_broadcast(&(pool->work_cond));
+                }
 
-                pthread_cond_broadcast(&(pool->dead_cond));
                 pthread_mutex_unlock(&actor_array_mutex);
             }
             else if (message->message_type == MSG_HELLO) {
@@ -192,7 +196,7 @@ static void *pool_worker() {
             }
             else {
                 if (message->message_type >= (long)role->nprompts) {
-                    printf("niepoprawny message type\n");
+                    printf("Unknown message type\n");
                     continue;
                 }
                 role->prompts[message->message_type](&(actor_info->state), sizeof(message->data), message->data);
@@ -266,27 +270,45 @@ int actor_system_create(actor_id_t *actor, role_t *const role) {
     return 0;
 }
 
+void actor_system_clear_memory() {
+    pool_work_t *work;
+    pool_work_t *work2;
+
+    if (pool == NULL)
+        return;
+
+
+    work = pool->work_first;
+    while (work != NULL) {
+        work2 = work->next;
+        pool_work_destroy(work);
+        work = work2;
+    }
+
+    pthread_mutex_destroy(&(pool->work_mutex));
+    pthread_mutex_destroy(&actor_array_mutex);
+    pthread_cond_destroy(&(pool->work_cond));
+    pthread_cond_destroy(&(pool->dead_cond));
+    pthread_key_delete(actor_key);
+
+    free(actors);
+    free(pool);
+}
+
 void actor_system_join(actor_id_t actor) {
     if (pool == NULL)
         return;
 
-    pthread_mutex_lock(&actor_array_mutex);
-    actor_info_t *actor_info = &actors[actor];
-
+    pthread_mutex_lock(&(pool->work_mutex));
     while (true) {
-        if (!actor_info->dead) {
-            printf("żyje\n");
-            pthread_cond_wait(&(pool->dead_cond), &actor_array_mutex);
-        } else {
-            printf("martwy\n");
-            if (dead_actor_count == actor_count) {
-                printf("count == count\n");
-                break;
-            }
-            pthread_cond_wait(&(pool->dead_cond), &actor_array_mutex);
-        }
+        if (pool->thread_cnt != 0)
+            pthread_cond_wait(&(pool->dead_cond), &(pool->work_mutex));
+        else
+            break;
     }
-    pthread_mutex_unlock(&actor_array_mutex);
+    pthread_mutex_unlock(&(pool->work_mutex));
+
+    actor_system_clear_memory();
 
     printf("koniec czekania\n");
 }

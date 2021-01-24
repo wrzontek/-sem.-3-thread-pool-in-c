@@ -73,8 +73,6 @@ int main() {
     if (send_message(first_actor, factorial_msg) != 0)
         return -1;
 
-    //sleep(10);
-
     actor_system_join(first_actor);
 
 	return 0;
