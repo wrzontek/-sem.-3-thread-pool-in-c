@@ -4,9 +4,10 @@
  */
 #include "cacti.h"
 
+static bool interrupted = false;
+
 struct actor_info {
     actor_id_t      id;
-    actor_id_t      other_id;
     bool            dead;
     uint            take_from;
     uint            place_at;
@@ -37,7 +38,7 @@ typedef struct thread_pool thread_pool_t;
 thread_pool_t *pool;
 
 actor_id_t actor_count;
-actor_id_t dead_actor_count; // moze sie przyda do join'a
+actor_id_t dead_actor_count;
 actor_id_t actors_array_size;
 actor_info_t *actors; // wiąże actor_id z actor_info
 pthread_mutex_t actor_array_mutex;
@@ -127,7 +128,7 @@ static void *pool_worker() {
             pthread_cond_wait(&(pool->work_cond), &(pool->work_mutex));
 
         if (pool->stop)
-            break; // todo nie takie proste mordzia
+            break;
 
         work = pool_work_get();
         pool->working_cnt++;
@@ -158,24 +159,26 @@ static void *pool_worker() {
 
 
             if (message->message_type == MSG_SPAWN) {
-                pthread_mutex_lock(&actor_array_mutex);
+                if (!interrupted) {
+                    pthread_mutex_lock(&actor_array_mutex);
 
-                if (actor_count == actors_array_size) {
-                    actors_array_size *= 2;
-                    actors = realloc(actors, actors_array_size);
+                    if (actor_count == actors_array_size) {
+                        actors_array_size *= 2;
+                        actors = realloc(actors, actors_array_size);
+                    }
+                    actor_init(actor_count, message->data);
+                    actor_id_t send_to_id = actor_count;
+                    actor_count++;
+
+                    pthread_mutex_unlock(&actor_array_mutex);
+
+                    message_t hello_message;
+                    hello_message.message_type = MSG_HELLO;
+                    hello_message.data = (void *) (&actor_info->id);
+                    hello_message.nbytes = sizeof(*hello_message.data);
+
+                    send_message(send_to_id, hello_message);
                 }
-                actor_init(actor_count, message->data);
-                actor_id_t send_to_id = actor_count;
-                actor_count++;
-
-                pthread_mutex_unlock(&actor_array_mutex);
-
-                message_t hello_message;
-                hello_message.message_type = MSG_HELLO;
-                hello_message.data = (void*)(&actor_info->id);
-                hello_message.nbytes = sizeof(*hello_message.data); // ?
-
-                send_message(send_to_id, hello_message);
             }
             else if (message->message_type == MSG_GODIE) {
                 pthread_mutex_lock(&actor_array_mutex);
@@ -190,7 +193,6 @@ static void *pool_worker() {
                 pthread_mutex_unlock(&actor_array_mutex);
             }
             else if (message->message_type == MSG_HELLO) {
-                actor_info->other_id = *(actor_id_t *)(message->data);
                 actor_info->state = NULL;
                 role->prompts[MSG_HELLO](&(actor_info->state), sizeof(message->data), message->data);
             }
@@ -201,7 +203,6 @@ static void *pool_worker() {
                 }
                 role->prompts[message->message_type](&(actor_info->state), sizeof(message->data), message->data);
             }
-            //printf("po robocie\n");
         }
 
         pthread_mutex_lock(&(pool->work_mutex));
@@ -244,7 +245,6 @@ int actor_system_create(actor_id_t *actor, role_t *const role) {
 
     if (actor_init(0, role) != 0)
         return -1;
-    actors[0].other_id = -1;
 
     actor_count = 1;
     dead_actor_count = 0;
@@ -267,6 +267,9 @@ int actor_system_create(actor_id_t *actor, role_t *const role) {
     }
 
     *actor = 0;
+    message_t hello_msg;
+    hello_msg.message_type = MSG_HELLO;
+    send_message(*actor, hello_msg);
     return 0;
 }
 
@@ -309,11 +312,12 @@ void actor_system_join(actor_id_t actor) {
     pthread_mutex_unlock(&(pool->work_mutex));
 
     actor_system_clear_memory();
-
-    printf("koniec czekania\n");
 }
 
 int send_message(actor_id_t actor, message_t message) {
+    if (interrupted)
+        return 0;
+
     pthread_mutex_lock(&actor_array_mutex);
 
     if (actor >= actors_array_size) {

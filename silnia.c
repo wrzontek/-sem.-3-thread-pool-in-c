@@ -5,11 +5,11 @@ message_t godie_msg;
 
 actor_id_t spawned_count = 0;
 pthread_cond_t ready;
+pthread_mutex_t ready_mutex;
 
 void hello_prompt (void **stateptr, size_t nbytes, void *data) {
     spawned_count++;
     pthread_cond_broadcast(&ready);
-    printf("HELLO\n");
 }
 
 void factorial_prompt (void **stateptr, size_t nbytes, void *data) {
@@ -31,8 +31,11 @@ void factorial_prompt (void **stateptr, size_t nbytes, void *data) {
         factorial_msg.data = d;
         factorial_msg.nbytes = sizeof(*data);
 
-        while (id + 1 > spawned_count)
-            pthread_cond_wait(&ready, NULL);
+        pthread_mutex_lock(&ready_mutex);
+        while (id + 2 > spawned_count)
+            pthread_cond_wait(&ready, &ready_mutex);
+
+        pthread_mutex_unlock(&ready_mutex);
 
         send_message(id + 1, factorial_msg);
     } else
@@ -54,6 +57,8 @@ int main() {
     }
 
     if (pthread_cond_init(&ready, NULL) != 0)
+        return -1;
+    if (pthread_mutex_init(&ready_mutex, NULL) != 0)
         return -1;
 
     actor_id_t first_actor;

@@ -9,8 +9,34 @@
 /cygdrive/c/Users/Adi/Desktop/am418419/cacti.h
 stddef.h
 -
+pthread.h
+-
+semaphore.h
+-
+stddef.h
+-
+stdbool.h
+-
+stdint.h
+-
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+signal.h
+-
+errno.h
+-
+err.h
+/cygdrive/c/Users/Adi/Desktop/am418419/err.h
+
+/cygdrive/c/Users/Adi/Desktop/am418419/err.h
 
 /cygdrive/c/Users/Adi/Desktop/am418419/macierz.c
+unistd.h
+-
 cacti.h
 /cygdrive/c/Users/Adi/Desktop/am418419/cacti.h
 
