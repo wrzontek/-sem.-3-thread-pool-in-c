@@ -45,6 +45,14 @@ int main() {
     int n;
     scanf("%d", &n);
 
+    if (n == 0 || n == 1) {
+        printf("1\n");
+        return 0;
+    } else if (n < 0) {
+        printf("n cannot be negative\n");
+        return 0;
+    }
+
     if (pthread_cond_init(&ready, NULL) != 0)
         return -1;
 
