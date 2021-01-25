@@ -13,13 +13,12 @@ void hello_prompt (void **stateptr, size_t nbytes, void *data) {
 }
 
 void factorial_prompt (void **stateptr, size_t nbytes, void *data) {
-    printf("   FACTORIAL\n");
     int64_t *d = (int64_t *) data;
 
-    printf("%ld %ld %ld\n", d[0], d[1], d[2]);
+    //printf("%ld %ld %ld\n", d[0], d[1], d[2]);
     d[1]++;
     d[2] = d[2] * d[1];
-    printf("%ld %ld %ld\n" , d[0], d[1], d[2]);
+    //printf("%ld %ld %ld\n" , d[0], d[1], d[2]);
 
     actor_id_t id = actor_id_self();
 
@@ -39,7 +38,7 @@ void factorial_prompt (void **stateptr, size_t nbytes, void *data) {
 
         send_message(id + 1, factorial_msg);
     } else
-        printf("wynik to %ld\n", d[2]);
+        printf("%ld\n", d[2]);
 
     send_message(id, godie_msg);
 }

@@ -15,7 +15,7 @@
 
 extern int sys_nerr;
 
-void syserr(const char *fmt, ...)  
+void syserr(const char *fmt, ...)
 {
   va_list fmt_args;
 

@@ -34,7 +34,7 @@ void matrix_prompt (void **stateptr, size_t nbytes, void *data) {
     int64_t row = d[0];
 
     int sleep_time = M[row][id][time];
-    usleep(sleep_time);
+    usleep(sleep_time * 100000);
 
     d[1] += M[row][id][value]; // id jest tożsame z numerem kolumny
 

@@ -228,10 +228,55 @@ actor_id_t actor_id_self() {
     return *id;
 }
 
-int actor_system_create(actor_id_t *actor, role_t *const role) {
-    //todo zrobić osobny wątek do obsługi sygnałów
+void interrupt_catch(int sig, siginfo_t *info, void *more) {
+    printf("\nMAM CIE\n\n");
+    interrupted = true;
+    message_t godie_msg;
+    godie_msg.message_type = MSG_GODIE;
+    pthread_mutex_lock(&actor_array_mutex);
 
+    for (actor_id_t actor = 0; actor < actor_count; actor++) {
+        actor_info_t *actor_info = &actors[actor];
+        if (!actor_info->dead) {
+            actor_info->queue[actor_info->place_at] = godie_msg;
+            actor_info->place_at = (actor_info->place_at + 1) % ACTOR_QUEUE_LIMIT;
+
+            pthread_mutex_unlock(&actor_array_mutex);
+
+            pool_add_work(actor);
+        }
+    }
+    pthread_mutex_unlock(&actor_array_mutex);
+
+    actor_system_join(0);
+}
+
+static void *SIGINT_catcher() {
+    struct sigaction action;
+    sigset_t block_mask;
+
+    sigemptyset(&block_mask);
+    sigaddset(&block_mask, SIGINT);
+
+    action.sa_sigaction = interrupt_catch;
+    action.sa_mask = block_mask;
+    action.sa_flags = SA_SIGINFO;
+
+    if (sigaction(SIGINT, &action, 0) == -1) {}
+        //syserr("sigaction");
+
+    sigwait(&block_mask, NULL);
+
+    return NULL;
+}
+
+int actor_system_create(actor_id_t *actor, role_t *const role) {
     pthread_t thread;
+
+    if (pthread_create(&thread, NULL, SIGINT_catcher, NULL) != 0)
+        exit(1);
+    pthread_detach(thread); // ?
+
     sigset_t set;
     sigfillset(&set);
     if (pthread_sigmask(SIG_BLOCK, &set, NULL) != 0)
