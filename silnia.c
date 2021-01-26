@@ -1,4 +1,3 @@
-#include <unistd.h>
 #include "cacti.h"
 
 message_t spawn_msg;
@@ -16,13 +15,11 @@ void hello_prompt (void **stateptr, size_t nbytes, void *data) {
 void factorial_prompt (void **stateptr, size_t nbytes, void *data) {
     int64_t *d = (int64_t *) data;
 
-    //printf("%ld %ld %ld\n", d[0], d[1], d[2]);
     d[1]++;
     d[2] = d[2] * d[1];
-    //printf("%ld %ld %ld\n" , d[0], d[1], d[2]);
 
     actor_id_t id = actor_id_self();
-    usleep(1000000);
+
     if (d[1] < d[0]) {
         send_message(id, spawn_msg);
 
@@ -44,6 +41,11 @@ void factorial_prompt (void **stateptr, size_t nbytes, void *data) {
 }
 
 int main() {
+    sigset_t set;
+    sigfillset(&set);
+    if (pthread_sigmask(SIG_BLOCK, &set, NULL) != 0)
+        return -1;
+
     int n;
     scanf("%d", &n);
 
@@ -87,7 +89,7 @@ int main() {
 
     actor_system_join(first_actor);
 
-    if (actor_system_create(&first_actor, role) != 0)
+    /*if (actor_system_create(&first_actor, role) != 0)
         return -1;
 
     message_t factorial_msg2;
@@ -100,9 +102,8 @@ int main() {
     if (send_message(first_actor, factorial_msg2) != 0)
         return -1;
 
-    actor_system_join(first_actor);
+    actor_system_join(first_actor);*/
 
-    //todo cond/mutex destroy
     free(role);
     pthread_mutex_destroy(&ready_mutex);
     pthread_cond_destroy(&ready);

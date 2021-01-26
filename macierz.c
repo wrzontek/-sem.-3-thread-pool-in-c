@@ -53,7 +53,12 @@ void matrix_prompt (void **stateptr, size_t nbytes, void *data) {
         send_message(id + 1, matrix_msg);
 }
 
-int main(){
+int main() {
+    sigset_t set;
+    sigfillset(&set);
+    if (pthread_sigmask(SIG_BLOCK, &set, NULL) != 0)
+        return -1;
+
     scanf("%d", &k);
     scanf("%d", &n);
     M = (int ***) calloc(k * n * 2, sizeof(int *));
@@ -125,9 +130,8 @@ int main(){
 
     actor_system_join(first_actor);
 
-    for (int i = 0; i < k; i++) {
+    for (int i = 0; i < k; i++)
         printf("%ld\n", data[i][1]);
-    }
 
     pthread_mutex_destroy(&ready_mutex);
     pthread_mutex_destroy(&done_mutex);
@@ -139,7 +143,9 @@ int main(){
             free(M[i][j]);
         free(M[i]);
     }
+
     free(M);
     free(role);
+
 	return 0;
 }

@@ -4,7 +4,7 @@
  */
 #include "cacti.h"
 
-static bool interrupted = false;
+static bool interrupted;
 
 struct actor_info {
     actor_id_t      id;
@@ -12,7 +12,7 @@ struct actor_info {
     uint            take_from;
     uint            place_at;
     message_t       queue[ACTOR_QUEUE_LIMIT];
-    void            *state; // ?
+    void            *state;
     role_t          *role;
 };
 typedef struct actor_info actor_info_t;
@@ -40,7 +40,7 @@ thread_pool_t *pool;
 actor_id_t actor_count;
 actor_id_t dead_actor_count;
 actor_id_t actors_array_size;
-actor_info_t *actors; // wiąże actor_id z actor_info
+actor_info_t *actors;
 pthread_mutex_t actor_array_mutex;
 
 static int actor_init(actor_id_t id, role_t *const role) {
@@ -155,13 +155,12 @@ static void *pool_worker() {
 
             //printf("robota aktora o id %ld wzięta z %d type = %ld\n",
             //       id, actor_info->take_from - 1, message->message_type);
+
             pthread_mutex_unlock(&actor_array_mutex);
 
-
             if (message->message_type == MSG_SPAWN) {
+                pthread_mutex_lock(&actor_array_mutex);
                 if (!interrupted) {
-                    pthread_mutex_lock(&actor_array_mutex);
-
                     if (actor_count == actors_array_size) {
                         actors_array_size *= 2;
                         actors = realloc(actors, actors_array_size);
@@ -178,13 +177,15 @@ static void *pool_worker() {
                     hello_message.nbytes = sizeof(*hello_message.data);
 
                     send_message(send_to_id, hello_message);
-                }
+                } else
+                    pthread_mutex_unlock(&actor_array_mutex);
             }
             else if (message->message_type == MSG_GODIE) {
                 pthread_mutex_lock(&actor_array_mutex);
 
                 actor_info->dead = true;
                 dead_actor_count++;
+
                 if (dead_actor_count == actor_count) {
                     pool->stop = true;
                     pthread_cond_broadcast(&(pool->work_cond));
@@ -219,7 +220,6 @@ static void *pool_worker() {
     pool->thread_cnt--;
     pthread_cond_signal(&(pool->dead_cond));
     pthread_mutex_unlock(&(pool->work_mutex));
-
     return NULL;
 }
 
@@ -238,37 +238,33 @@ static void *SIGINT_catcher() {
     int sig;
     sigwait(&block_mask, &sig);
 
-    if (sig == SIGINT) {
-        printf("\nSIGINT MAM\n\n");
+    if (sig == SIGINT) { // if sig == SIGRTMIN do nothing, just end
         pthread_mutex_lock(&actor_array_mutex);
-
         interrupted = true;
-        message_t godie_msg;
-        godie_msg.message_type = MSG_GODIE;
 
         for (actor_id_t actor = 0; actor < actor_count; actor++) {
             actor_info_t *actor_info = &actors[actor];
             if (!actor_info->dead) {
+                message_t godie_msg;
+                godie_msg.message_type = MSG_GODIE;
+
                 actor_info->queue[actor_info->place_at] = godie_msg;
                 actor_info->place_at = (actor_info->place_at + 1) % ACTOR_QUEUE_LIMIT;
 
                 pool_add_work(actor);
             }
         }
+
         pthread_mutex_unlock(&actor_array_mutex);
-        printf("\nSIGINT JOINUJE\n\n");
-        actor_system_join(0);
-        printf("\nSIGINT PO JOIN\n\n");
-    } else
-        printf("\nINNY SYGNAL MAM\n\n");
+    }
 
 
     return NULL;
 }
 
 pthread_t *threads;
-
 int actor_system_create(actor_id_t *actor, role_t *const role) {
+    interrupted = false;
     threads = calloc(1 + POOL_SIZE, sizeof(pthread_t *));
 
     if (pthread_create(&threads[0], NULL, SIGINT_catcher, NULL) != 0)
@@ -291,8 +287,9 @@ int actor_system_create(actor_id_t *actor, role_t *const role) {
     actor_count = 1;
     dead_actor_count = 0;
 
-    pool = calloc(1, sizeof(thread_pool_t));;
+    pool = calloc(1, sizeof(thread_pool_t));
     pool->thread_cnt = POOL_SIZE;
+
     if (pthread_mutex_init(&(pool->work_mutex), NULL) != 0)
         return -1;
     if (pthread_cond_init(&(pool->work_cond), NULL) != 0)
@@ -304,7 +301,7 @@ int actor_system_create(actor_id_t *actor, role_t *const role) {
 
     for (int i = 0; i < POOL_SIZE; i++) {
         if (pthread_create(&threads[i + 1], NULL, pool_worker, NULL) != 0)
-            exit(1); //zgodnie z odpowiedzią na forum
+            exit(1);
     }
 
     *actor = 0;
@@ -321,15 +318,19 @@ static void actor_system_clear_memory() {
     if (pool == NULL)
         return;
 
-
     work = pool->work_first;
     while (work != NULL) {
         work2 = work->next;
         pool_work_destroy(work);
         work = work2;
     }
+
+    pthread_mutex_lock(&actor_array_mutex);
+
     if (!interrupted)
         pthread_kill(threads[0], SIGRTMIN + 1);
+
+    pthread_mutex_unlock(&actor_array_mutex);
 
     for (int i = 0; i < POOL_SIZE + 1; i++)
         pthread_join(threads[i], NULL);
@@ -362,10 +363,11 @@ void actor_system_join(actor_id_t actor) {
 }
 
 int send_message(actor_id_t actor, message_t message) {
-    if (interrupted)
-        return 0;
-
     pthread_mutex_lock(&actor_array_mutex);
+    if (interrupted) {
+        pthread_mutex_unlock(&actor_array_mutex);
+        return 0;
+    }
 
     if (actor >= actors_array_size) {
         pthread_mutex_unlock(&actor_array_mutex);
