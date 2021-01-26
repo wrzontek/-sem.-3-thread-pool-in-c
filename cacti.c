@@ -228,77 +228,40 @@ actor_id_t actor_id_self() {
     return *id;
 }
 
-void interrupt_catch(int sig, siginfo_t *info, void *more) {
-    printf("\nCATCH\n\n");
-    interrupted = true;
-    message_t godie_msg;
-    godie_msg.message_type = MSG_GODIE;
-    pthread_mutex_lock(&actor_array_mutex);
-
-    for (actor_id_t actor = 0; actor < actor_count; actor++) {
-        actor_info_t *actor_info = &actors[actor];
-        if (!actor_info->dead) {
-            actor_info->queue[actor_info->place_at] = godie_msg;
-            actor_info->place_at = (actor_info->place_at + 1) % ACTOR_QUEUE_LIMIT;
-
-            pthread_mutex_unlock(&actor_array_mutex);
-
-            pool_add_work(actor);
-        }
-    }
-    pthread_mutex_unlock(&actor_array_mutex);
-
-    actor_system_join(0);
-}
-
-void rtmin_catch(int sig, siginfo_t *info, void *more) {
-    printf("\nCATCH\n\n");
-    interrupted = true;
-    message_t godie_msg;
-    godie_msg.message_type = MSG_GODIE;
-    pthread_mutex_lock(&actor_array_mutex);
-
-    for (actor_id_t actor = 0; actor < actor_count; actor++) {
-        actor_info_t *actor_info = &actors[actor];
-        if (!actor_info->dead) {
-            actor_info->queue[actor_info->place_at] = godie_msg;
-            actor_info->place_at = (actor_info->place_at + 1) % ACTOR_QUEUE_LIMIT;
-
-            pthread_mutex_unlock(&actor_array_mutex);
-
-            pool_add_work(actor);
-        }
-    }
-    pthread_mutex_unlock(&actor_array_mutex);
-
-    actor_system_join(0);
-}
-
 static void *SIGINT_catcher() {
-    struct sigaction int_action;
-    struct sigaction rtmin_action;
     sigset_t block_mask;
-    int sig;
 
     sigemptyset(&block_mask);
     sigaddset(&block_mask, SIGINT);
     sigaddset(&block_mask, SIGRTMIN + 1);
-    
-    int_action.sa_sigaction = interrupt_catch;
-    int_action.sa_mask = block_mask;
-    int_action.sa_flags = SA_SIGINFO;
 
-    rtmin_action.sa_sigaction = rtmin_catch;
-    rtmin_action.sa_mask = block_mask;
-    rtmin_action.sa_flags = SA_SIGINFO;
-    
-    if (sigaction(SIGINT, &int_action, 0) == -1) {}
-        //syserr("sigaction");
-    if (sigaction(SIGRTMIN + 1, &rtmin_action, 0) == -1) {}
-        //syserr("sigaction");
-
+    int sig;
     sigwait(&block_mask, &sig);
-    printf("\nMAM CIE\n\n");
+
+    if (sig == SIGINT) {
+        printf("\nSIGINT MAM\n\n");
+        pthread_mutex_lock(&actor_array_mutex);
+
+        interrupted = true;
+        message_t godie_msg;
+        godie_msg.message_type = MSG_GODIE;
+
+        for (actor_id_t actor = 0; actor < actor_count; actor++) {
+            actor_info_t *actor_info = &actors[actor];
+            if (!actor_info->dead) {
+                actor_info->queue[actor_info->place_at] = godie_msg;
+                actor_info->place_at = (actor_info->place_at + 1) % ACTOR_QUEUE_LIMIT;
+
+                pool_add_work(actor);
+            }
+        }
+        pthread_mutex_unlock(&actor_array_mutex);
+        printf("\nSIGINT JOINUJE\n\n");
+        actor_system_join(0);
+        printf("\nSIGINT PO JOIN\n\n");
+    } else
+        printf("\nINNY SYGNAL MAM\n\n");
+
 
     return NULL;
 }
@@ -351,7 +314,7 @@ int actor_system_create(actor_id_t *actor, role_t *const role) {
     return 0;
 }
 
-void actor_system_clear_memory() {
+static void actor_system_clear_memory() {
     pool_work_t *work;
     pool_work_t *work2;
 
@@ -365,8 +328,10 @@ void actor_system_clear_memory() {
         pool_work_destroy(work);
         work = work2;
     }
+    if (!interrupted)
+        pthread_kill(threads[0], SIGRTMIN + 1);
 
-    for (int i = 1; i < POOL_SIZE + 1; i++)
+    for (int i = 0; i < POOL_SIZE + 1; i++)
         pthread_join(threads[i], NULL);
 
     pthread_mutex_destroy(&(pool->work_mutex));
