@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "cacti.h"
 
 message_t spawn_msg;
@@ -21,7 +22,7 @@ void factorial_prompt (void **stateptr, size_t nbytes, void *data) {
     //printf("%ld %ld %ld\n" , d[0], d[1], d[2]);
 
     actor_id_t id = actor_id_self();
-
+    usleep(1000000);
     if (d[1] < d[0]) {
         send_message(id, spawn_msg);
 
@@ -101,5 +102,9 @@ int main() {
 
     actor_system_join(first_actor);
 
+    //todo cond/mutex destroy
+    free(role);
+    pthread_mutex_destroy(&ready_mutex);
+    pthread_cond_destroy(&ready);
 	return 0;
 }

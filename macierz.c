@@ -33,7 +33,7 @@ void matrix_prompt (void **stateptr, size_t nbytes, void *data) {
     int64_t row = d[0];
 
     int sleep_time = M[row][id][time];
-    usleep(sleep_time * 100000);
+    usleep(sleep_time);
 
     d[1] += M[row][id][value]; // id jest tożsame z numerem kolumny
 
@@ -129,5 +129,17 @@ int main(){
         printf("%ld\n", data[i][1]);
     }
 
+    pthread_mutex_destroy(&ready_mutex);
+    pthread_mutex_destroy(&done_mutex);
+    pthread_cond_destroy(&ready);
+    pthread_cond_destroy(&done);
+
+    for (int i = 0; i < k; i++) {
+        for (int j = 0; j < n; j++)
+            free(M[i][j]);
+        free(M[i]);
+    }
+    free(M);
+    free(role);
 	return 0;
 }

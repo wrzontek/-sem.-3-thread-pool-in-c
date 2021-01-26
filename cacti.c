@@ -229,7 +229,30 @@ actor_id_t actor_id_self() {
 }
 
 void interrupt_catch(int sig, siginfo_t *info, void *more) {
-    printf("\nMAM CIE\n\n");
+    printf("\nCATCH\n\n");
+    interrupted = true;
+    message_t godie_msg;
+    godie_msg.message_type = MSG_GODIE;
+    pthread_mutex_lock(&actor_array_mutex);
+
+    for (actor_id_t actor = 0; actor < actor_count; actor++) {
+        actor_info_t *actor_info = &actors[actor];
+        if (!actor_info->dead) {
+            actor_info->queue[actor_info->place_at] = godie_msg;
+            actor_info->place_at = (actor_info->place_at + 1) % ACTOR_QUEUE_LIMIT;
+
+            pthread_mutex_unlock(&actor_array_mutex);
+
+            pool_add_work(actor);
+        }
+    }
+    pthread_mutex_unlock(&actor_array_mutex);
+
+    actor_system_join(0);
+}
+
+void rtmin_catch(int sig, siginfo_t *info, void *more) {
+    printf("\nCATCH\n\n");
     interrupted = true;
     message_t godie_msg;
     godie_msg.message_type = MSG_GODIE;
@@ -252,30 +275,41 @@ void interrupt_catch(int sig, siginfo_t *info, void *more) {
 }
 
 static void *SIGINT_catcher() {
-    struct sigaction action;
+    struct sigaction int_action;
+    struct sigaction rtmin_action;
     sigset_t block_mask;
+    int sig;
 
     sigemptyset(&block_mask);
     sigaddset(&block_mask, SIGINT);
+    sigaddset(&block_mask, SIGRTMIN + 1);
+    
+    int_action.sa_sigaction = interrupt_catch;
+    int_action.sa_mask = block_mask;
+    int_action.sa_flags = SA_SIGINFO;
 
-    action.sa_sigaction = interrupt_catch;
-    action.sa_mask = block_mask;
-    action.sa_flags = SA_SIGINFO;
-
-    if (sigaction(SIGINT, &action, 0) == -1) {}
+    rtmin_action.sa_sigaction = rtmin_catch;
+    rtmin_action.sa_mask = block_mask;
+    rtmin_action.sa_flags = SA_SIGINFO;
+    
+    if (sigaction(SIGINT, &int_action, 0) == -1) {}
+        //syserr("sigaction");
+    if (sigaction(SIGRTMIN + 1, &rtmin_action, 0) == -1) {}
         //syserr("sigaction");
 
-    sigwait(&block_mask, NULL);
+    sigwait(&block_mask, &sig);
+    printf("\nMAM CIE\n\n");
 
     return NULL;
 }
 
-int actor_system_create(actor_id_t *actor, role_t *const role) {
-    pthread_t thread;
+pthread_t *threads;
 
-    if (pthread_create(&thread, NULL, SIGINT_catcher, NULL) != 0)
+int actor_system_create(actor_id_t *actor, role_t *const role) {
+    threads = calloc(1 + POOL_SIZE, sizeof(pthread_t *));
+
+    if (pthread_create(&threads[0], NULL, SIGINT_catcher, NULL) != 0)
         exit(1);
-    pthread_detach(thread); // ?
 
     sigset_t set;
     sigfillset(&set);
@@ -306,9 +340,8 @@ int actor_system_create(actor_id_t *actor, role_t *const role) {
     pthread_key_create(&actor_key, NULL);
 
     for (int i = 0; i < POOL_SIZE; i++) {
-        if (pthread_create(&thread, NULL, pool_worker, NULL) != 0)
+        if (pthread_create(&threads[i + 1], NULL, pool_worker, NULL) != 0)
             exit(1); //zgodnie z odpowiedzią na forum
-        pthread_detach(thread); // ?
     }
 
     *actor = 0;
@@ -333,12 +366,16 @@ void actor_system_clear_memory() {
         work = work2;
     }
 
+    for (int i = 1; i < POOL_SIZE + 1; i++)
+        pthread_join(threads[i], NULL);
+
     pthread_mutex_destroy(&(pool->work_mutex));
     pthread_mutex_destroy(&actor_array_mutex);
     pthread_cond_destroy(&(pool->work_cond));
     pthread_cond_destroy(&(pool->dead_cond));
     pthread_key_delete(actor_key);
 
+    free(threads);
     free(actors);
     free(pool);
 }
