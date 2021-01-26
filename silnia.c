@@ -35,7 +35,6 @@ void factorial_prompt (void **stateptr, size_t nbytes, void *data) {
             pthread_cond_wait(&ready, &ready_mutex);
 
         pthread_mutex_unlock(&ready_mutex);
-
         send_message(id + 1, factorial_msg);
     } else
         printf("%ld\n", d[2]);
@@ -83,6 +82,21 @@ int main() {
     factorial_msg.nbytes = sizeof(*data);
     
     if (send_message(first_actor, factorial_msg) != 0)
+        return -1;
+
+    actor_system_join(first_actor);
+
+    if (actor_system_create(&first_actor, role) != 0)
+        return -1;
+
+    message_t factorial_msg2;
+    factorial_msg2.message_type = 1;
+    int64_t data2[3] = {n, 1, 1}; // n, k, k!
+    factorial_msg2.data = data2;
+    factorial_msg2.nbytes = sizeof(*data2);
+    spawned_count = 0;
+
+    if (send_message(first_actor, factorial_msg2) != 0)
         return -1;
 
     actor_system_join(first_actor);

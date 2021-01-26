@@ -9,7 +9,6 @@ int ***M;
 
 message_t spawn_msg;
 message_t godie_msg;
-message_t hello_msg;
 
 actor_id_t spawned_count = 0;
 int64_t done_count = 0;
