@@ -7,6 +7,8 @@
 #IncludeRegexTransform: 
 
 /cygdrive/c/Users/Adi/Desktop/am418419/cacti.h
+stddef.h
+-
 
 /cygdrive/c/Users/Adi/Desktop/am418419/silnia.c
 unistd.h
@@ -16,6 +18,8 @@ pthread.h
 stdio.h
 -
 stdlib.h
+-
+signal.h
 -
 cacti.h
 /cygdrive/c/Users/Adi/Desktop/am418419/cacti.h

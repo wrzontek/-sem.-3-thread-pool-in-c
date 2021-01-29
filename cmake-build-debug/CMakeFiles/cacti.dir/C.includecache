@@ -15,8 +15,12 @@ stdio.h
 -
 stdlib.h
 -
+signal.h
+-
 cacti.h
 /cygdrive/c/Users/Adi/Desktop/am418419/cacti.h
 
 /cygdrive/c/Users/Adi/Desktop/am418419/cacti.h
+stddef.h
+-
 

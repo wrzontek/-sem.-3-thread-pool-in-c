@@ -62,7 +62,7 @@ static int actor_init(actor_id_t id, role_t *const role) {
 static pool_work_t *pool_work_create(actor_id_t id) {
     pool_work_t *work;
 
-    work       = malloc(sizeof(*work));
+    work       = malloc(sizeof(pool_work_t));
     work->id   = id;
     work->next = NULL;
 
