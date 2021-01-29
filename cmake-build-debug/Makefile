@@ -188,6 +188,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named chaos
+
+# Build rule for target.
+chaos: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 chaos
+.PHONY : chaos
+
+# fast build rule for target.
+chaos/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chaos.dir/build.make CMakeFiles/chaos.dir/build
+.PHONY : chaos/fast
+
+#=============================================================================
 # Target rules for targets named silnia
 
 # Build rule for target.
@@ -278,6 +291,33 @@ cacti.s: cacti.c.s
 cacti.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/cacti.dir/build.make CMakeFiles/cacti.dir/cacti.c.s
 .PHONY : cacti.c.s
+
+chaos.o: chaos.cpp.o
+
+.PHONY : chaos.o
+
+# target to build an object file
+chaos.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chaos.dir/build.make CMakeFiles/chaos.dir/chaos.cpp.o
+.PHONY : chaos.cpp.o
+
+chaos.i: chaos.cpp.i
+
+.PHONY : chaos.i
+
+# target to preprocess a source file
+chaos.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chaos.dir/build.make CMakeFiles/chaos.dir/chaos.cpp.i
+.PHONY : chaos.cpp.i
+
+chaos.s: chaos.cpp.s
+
+.PHONY : chaos.s
+
+# target to generate assembly for a file
+chaos.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chaos.dir/build.make CMakeFiles/chaos.dir/chaos.cpp.s
+.PHONY : chaos.cpp.s
 
 err.o: err.c.o
 
@@ -374,6 +414,7 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... test"
 	@echo "... cacti"
+	@echo "... chaos"
 	@echo "... err"
 	@echo "... macierz"
 	@echo "... silnia"
@@ -381,6 +422,9 @@ help:
 	@echo "... cacti.o"
 	@echo "... cacti.i"
 	@echo "... cacti.s"
+	@echo "... chaos.o"
+	@echo "... chaos.i"
+	@echo "... chaos.s"
 	@echo "... err.o"
 	@echo "... err.i"
 	@echo "... err.s"

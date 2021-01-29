@@ -2,6 +2,7 @@
  * znaczna część implementacji puli wątków zaczerpnięta z
  * https://nachtimwald.com/2019/04/12/thread-pool-in-c/?fbclid=IwAR3JTnR-ac-w4fw-UEdIFSCCIo7b0kGcEzrT7BzZ__JfssbKa2chJcs2Xek
  */
+#include <string.h>
 #include "cacti.h"
 
 static bool interrupted;
@@ -11,7 +12,8 @@ struct actor_info {
     bool            dead;
     uint            take_from;
     uint            place_at;
-    message_t       queue[ACTOR_QUEUE_LIMIT];
+    uint            in_queue;
+    message_t       *queue;
     void            *state;
     role_t          *role;
 };
@@ -47,9 +49,11 @@ static int actor_init(actor_id_t id, role_t *const role) {
     actors[id].dead      = false;
     actors[id].take_from = 0;
     actors[id].place_at  = 0;
+    actors[id].in_queue  = 0;
     actors[id].role      = role;
     actors[id].id        = id;
     actors[id].state     = NULL;
+    actors[id].queue     = calloc(ACTOR_QUEUE_LIMIT, sizeof(message_t));
 
     return 0;
 }
@@ -152,6 +156,7 @@ static void *pool_worker() {
             message = &actor_info->queue[actor_info->take_from];
             role = actor_info->role;
             actor_info->take_from = (actor_info->take_from + 1) % ACTOR_QUEUE_LIMIT;
+            actor_info->in_queue--;
 
             //printf("robota aktora o id %ld wzięta z %d type = %ld\n",
             //       id, actor_info->take_from - 1, message->message_type);
@@ -160,10 +165,18 @@ static void *pool_worker() {
 
             if (message->message_type == MSG_SPAWN) {
                 pthread_mutex_lock(&actor_array_mutex);
-                if (!interrupted) {
+
+                if (actor_count < CAST_LIMIT && !interrupted) {
                     if (actor_count == actors_array_size) {
-                        actors_array_size *= 2;
-                        actors = realloc(actors, actors_array_size);
+                        if (actors_array_size < CAST_LIMIT) {
+                            actors_array_size *= 2;
+                            if (actors_array_size > CAST_LIMIT || actors_array_size < 0) // na wypadek overflow
+                                actors_array_size = CAST_LIMIT;
+
+                            actors = realloc(actors, actors_array_size * sizeof(actor_info_t));
+
+                            actor_info = &actors[id];
+                        }
                     }
                     actor_init(actor_count, message->data);
                     actor_id_t send_to_id = actor_count;
@@ -199,7 +212,7 @@ static void *pool_worker() {
             }
             else {
                 if (message->message_type >= (long)role->nprompts) {
-                    printf("Unknown message type\n");
+                    printf("Unknown message type: %ld\n", message->message_type);
                     continue;
                 }
                 role->prompts[message->message_type](&(actor_info->state), sizeof(message->data), message->data);
@@ -248,6 +261,7 @@ static void *SIGINT_catcher() {
                 message_t godie_msg;
                 godie_msg.message_type = MSG_GODIE;
 
+                //todo what if full?
                 actor_info->queue[actor_info->place_at] = godie_msg;
                 actor_info->place_at = (actor_info->place_at + 1) % ACTOR_QUEUE_LIMIT;
 
@@ -364,12 +378,13 @@ void actor_system_join(actor_id_t actor) {
 
 int send_message(actor_id_t actor, message_t message) {
     pthread_mutex_lock(&actor_array_mutex);
+
     if (interrupted) {
         pthread_mutex_unlock(&actor_array_mutex);
         return 0;
     }
 
-    if (actor >= actors_array_size) {
+    if (actor >= actor_count) {
         pthread_mutex_unlock(&actor_array_mutex);
         return -2;
     }
@@ -381,8 +396,14 @@ int send_message(actor_id_t actor, message_t message) {
         return -1;
     }
 
-    actor_info->queue[actor_info->place_at] = message;
-    actor_info->place_at = (actor_info->place_at + 1) % ACTOR_QUEUE_LIMIT;
+    if (actor_info->in_queue < ACTOR_QUEUE_LIMIT) {
+        actor_info->queue[actor_info->place_at] = message;
+        actor_info->place_at = (actor_info->place_at + 1) % ACTOR_QUEUE_LIMIT;
+        actor_info->in_queue++;
+    } else {
+        pthread_mutex_unlock(&actor_array_mutex);
+        return -3;
+    }
 
     pthread_mutex_unlock(&actor_array_mutex);
 

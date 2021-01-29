@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "cacti.h"
 
 message_t spawn_msg;

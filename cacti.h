@@ -1,18 +1,10 @@
 #ifndef CACTI_H
 #define CACTI_H
 
-#include <stddef.h>
 #include <pthread.h>
-#include <semaphore.h>
-#include <stddef.h>
 #include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-#include <errno.h>
-#include "err.h"
 
 typedef long message_type_t;
 
@@ -25,7 +17,7 @@ typedef long message_type_t;
 #endif
 
 #ifndef CAST_LIMIT
-#define CAST_LIMIT 1048576
+#define CAST_LIMIT 1000 // 1048576
 #endif
 
 #ifndef POOL_SIZE

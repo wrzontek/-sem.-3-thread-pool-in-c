@@ -19,6 +19,7 @@ add_library(err err.c)
 add_library(cacti STATIC cacti.c)
 add_executable(macierz macierz.c)
 add_executable(silnia silnia.c)
+add_executable(chaos chaos.cpp)
 add_subdirectory(test)
 
 install(TARGETS cacti DESTINATION .)
