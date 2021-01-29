@@ -12,11 +12,11 @@ typedef long message_type_t;
 #endif
 
 #ifndef CAST_LIMIT
-#define CAST_LIMIT 10000 // 1048576
+#define CAST_LIMIT 1000 // 1048576
 #endif
 
 #ifndef POOL_SIZE
-#define POOL_SIZE 3
+#define POOL_SIZE 5
 #endif
 
 typedef struct message

@@ -33,7 +33,6 @@ struct thread_pool {
     pthread_mutex_t work_mutex;
     pthread_cond_t  work_cond;
     pthread_cond_t  dead_cond;
-    size_t          working_cnt;
     size_t          thread_cnt;
     bool            stop;
 };
@@ -136,7 +135,6 @@ static void *pool_worker() {
             break;
 
         work = pool_work_get();
-        pool->working_cnt++;
         pthread_mutex_unlock(&(pool->work_mutex));
 
         if (work != NULL) {
@@ -159,6 +157,7 @@ static void *pool_worker() {
             actor_info->take_from = (actor_info->take_from + 1) % ACTOR_QUEUE_LIMIT;
             actor_info->in_queue--;
 
+
             //printf("robota aktora o id %ld wzięta z %d type = %ld\n",
             //       id, actor_info->take_from - 1, message->message_type);
 
@@ -171,7 +170,7 @@ static void *pool_worker() {
                     if (actor_count == actors_array_size) {
                         if (actors_array_size < CAST_LIMIT) {
                             actors_array_size *= 2;
-                            if (actors_array_size > CAST_LIMIT || actors_array_size < 0) // na wypadek overflow
+                            if (actors_array_size > CAST_LIMIT || actors_array_size < 0) // in case of overflow
                                 actors_array_size = CAST_LIMIT;
 
                             actors = realloc(actors, actors_array_size * sizeof(actor_info_t));
@@ -220,15 +219,11 @@ static void *pool_worker() {
             }
         }
 
-        pthread_mutex_lock(&(pool->work_mutex));
-        pool->working_cnt--;
-
         pthread_mutex_lock(&actor_array_mutex);
         if (actor_info->in_queue > 0)
             pthread_cond_broadcast(&(pool->work_cond));
-        pthread_mutex_unlock(&actor_array_mutex);
 
-        pthread_mutex_unlock(&(pool->work_mutex));
+        pthread_mutex_unlock(&actor_array_mutex);
     }
 
     pool->thread_cnt--;
@@ -259,10 +254,8 @@ static void *SIGINT_catcher() {
         for (actor_id_t actor = 0; actor < actor_count; actor++) {
             actor_info_t *actor_info = &actors[actor];
             if (!actor_info->dead) {
-                message_t godie_msg;
-                godie_msg.message_type = MSG_GODIE;
+                message_t godie_msg = {MSG_GODIE, 0, NULL};
 
-                //todo what if full?
                 uint place_at = (actor_info->take_from + actor_info->in_queue) % ACTOR_QUEUE_LIMIT;
                 actor_info->queue[place_at] = godie_msg;
                 actor_info->in_queue++;
@@ -315,14 +308,13 @@ int actor_system_create(actor_id_t *actor, role_t *const role) {
 
     pthread_key_create(&actor_key, NULL);
 
-    for (int i = 0; i < POOL_SIZE; i++) {
+    for (int i = 0; i < POOL_SIZE; i++)
         if (pthread_create(&threads[i + 1], NULL, pool_worker, NULL) != 0)
             exit(1);
-    }
+
 
     *actor = 0;
-    message_t hello_msg;
-    hello_msg.message_type = MSG_HELLO;
+    message_t hello_msg = {MSG_HELLO, 0, NULL};
     send_message(*actor, hello_msg);
     return 0;
 }
@@ -358,7 +350,7 @@ static void actor_system_clear_memory() {
     pthread_key_delete(actor_key);
 
     free(threads);
-    for (actor_id_t i; i < actor_count; i++)
+    for (actor_id_t i = 0; i < actor_count; i++)
         free(actors[i].queue);
 
     free(actors);
