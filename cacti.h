@@ -1,11 +1,6 @@
 #ifndef CACTI_H
 #define CACTI_H
 
-#include <pthread.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-
 typedef long message_type_t;
 
 #define MSG_SPAWN (message_type_t)0x06057a6e
@@ -17,7 +12,7 @@ typedef long message_type_t;
 #endif
 
 #ifndef CAST_LIMIT
-#define CAST_LIMIT 1000 // 1048576
+#define CAST_LIMIT 10000 // 1048576
 #endif
 
 #ifndef POOL_SIZE

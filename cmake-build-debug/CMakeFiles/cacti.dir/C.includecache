@@ -7,12 +7,6 @@
 #IncludeRegexTransform: 
 
 /cygdrive/c/Users/Adi/Desktop/am418419/cacti.c
-string.h
--
-cacti.h
-/cygdrive/c/Users/Adi/Desktop/am418419/cacti.h
-
-/cygdrive/c/Users/Adi/Desktop/am418419/cacti.h
 pthread.h
 -
 stdbool.h
@@ -21,4 +15,8 @@ stdio.h
 -
 stdlib.h
 -
+cacti.h
+/cygdrive/c/Users/Adi/Desktop/am418419/cacti.h
+
+/cygdrive/c/Users/Adi/Desktop/am418419/cacti.h
 

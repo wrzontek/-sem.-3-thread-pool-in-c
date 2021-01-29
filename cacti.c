@@ -2,7 +2,10 @@
  * znaczna część implementacji puli wątków zaczerpnięta z
  * https://nachtimwald.com/2019/04/12/thread-pool-in-c/?fbclid=IwAR3JTnR-ac-w4fw-UEdIFSCCIo7b0kGcEzrT7BzZ__JfssbKa2chJcs2Xek
  */
-#include <string.h>
+#include <pthread.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "cacti.h"
 
 static bool interrupted;
@@ -11,7 +14,6 @@ struct actor_info {
     actor_id_t      id;
     bool            dead;
     uint            take_from;
-    uint            place_at;
     uint            in_queue;
     message_t       *queue;
     void            *state;
@@ -48,7 +50,6 @@ pthread_mutex_t actor_array_mutex;
 static int actor_init(actor_id_t id, role_t *const role) {
     actors[id].dead      = false;
     actors[id].take_from = 0;
-    actors[id].place_at  = 0;
     actors[id].in_queue  = 0;
     actors[id].role      = role;
     actors[id].id        = id;
@@ -223,7 +224,7 @@ static void *pool_worker() {
         pool->working_cnt--;
 
         pthread_mutex_lock(&actor_array_mutex);
-        if (actor_info->take_from != actor_info->place_at)
+        if (actor_info->in_queue > 0)
             pthread_cond_broadcast(&(pool->work_cond));
         pthread_mutex_unlock(&actor_array_mutex);
 
@@ -262,8 +263,9 @@ static void *SIGINT_catcher() {
                 godie_msg.message_type = MSG_GODIE;
 
                 //todo what if full?
-                actor_info->queue[actor_info->place_at] = godie_msg;
-                actor_info->place_at = (actor_info->place_at + 1) % ACTOR_QUEUE_LIMIT;
+                uint place_at = (actor_info->take_from + actor_info->in_queue) % ACTOR_QUEUE_LIMIT;
+                actor_info->queue[place_at] = godie_msg;
+                actor_info->in_queue++;
 
                 pool_add_work(actor);
             }
@@ -356,6 +358,9 @@ static void actor_system_clear_memory() {
     pthread_key_delete(actor_key);
 
     free(threads);
+    for (actor_id_t i; i < actor_count; i++)
+        free(actors[i].queue);
+
     free(actors);
     free(pool);
 }
@@ -397,8 +402,8 @@ int send_message(actor_id_t actor, message_t message) {
     }
 
     if (actor_info->in_queue < ACTOR_QUEUE_LIMIT) {
-        actor_info->queue[actor_info->place_at] = message;
-        actor_info->place_at = (actor_info->place_at + 1) % ACTOR_QUEUE_LIMIT;
+        uint place_at = (actor_info->take_from + actor_info->in_queue) % ACTOR_QUEUE_LIMIT;
+        actor_info->queue[place_at] = message;
         actor_info->in_queue++;
     } else {
         pthread_mutex_unlock(&actor_array_mutex);
