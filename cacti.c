@@ -157,14 +157,16 @@ static void *pool_worker() {
             actor_info->take_from = (actor_info->take_from + 1) % ACTOR_QUEUE_LIMIT;
             actor_info->in_queue--;
 
-
+            message_type_t type = message->message_type;
+            void *data = message->data;
+            void **state = &actor_info->state;
             //printf("robota aktora o id %ld wzięta z %d type = %ld\n",
             //       id, actor_info->take_from - 1, message->message_type);
 
-            pthread_mutex_unlock(&actor_array_mutex);
+            //pthread_mutex_unlock(&actor_array_mutex);
 
-            if (message->message_type == MSG_SPAWN) {
-                pthread_mutex_lock(&actor_array_mutex);
+            if (type == MSG_SPAWN) {
+                //pthread_mutex_lock(&actor_array_mutex);
 
                 if (actor_count < CAST_LIMIT && !interrupted) {
                     if (actor_count == actors_array_size) {
@@ -173,31 +175,34 @@ static void *pool_worker() {
                             if (actors_array_size > CAST_LIMIT || actors_array_size < 0) // in case of overflow
                                 actors_array_size = CAST_LIMIT;
 
+                            pthread_mutex_lock(&pool->work_mutex);
                             actors = realloc(actors, actors_array_size * sizeof(actor_info_t));
-
-                            actor_info = &actors[id];
+                            pthread_mutex_unlock(&pool->work_mutex);
                         }
                     }
+
+                    actor_info = &actors[id];
                     actor_init(actor_count, message->data);
                     actor_id_t send_to_id = actor_count;
                     actor_count++;
-
-                    pthread_mutex_unlock(&actor_array_mutex);
 
                     message_t hello_message;
                     hello_message.message_type = MSG_HELLO;
                     hello_message.data = (void *) (&actor_info->id);
                     hello_message.nbytes = sizeof(*hello_message.data);
 
+                    pthread_mutex_unlock(&actor_array_mutex);
                     send_message(send_to_id, hello_message);
                 } else
                     pthread_mutex_unlock(&actor_array_mutex);
             }
-            else if (message->message_type == MSG_GODIE) {
-                pthread_mutex_lock(&actor_array_mutex);
-
+            else if (type == MSG_GODIE) {
+                //pthread_mutex_lock(&actor_array_mutex);
+                actor_info = &actors[id];
                 actor_info->dead = true;
                 dead_actor_count++;
+
+                //printf("%ld   %ld %ld\n", actor_count - dead_actor_count, dead_actor_count, actor_count);
 
                 if (dead_actor_count == actor_count) {
                     pool->stop = true;
@@ -206,16 +211,22 @@ static void *pool_worker() {
 
                 pthread_mutex_unlock(&actor_array_mutex);
             }
-            else if (message->message_type == MSG_HELLO) {
+            else if (type == MSG_HELLO) {
+                actor_info = &actors[id];
                 actor_info->state = NULL;
-                role->prompts[MSG_HELLO](&(actor_info->state), sizeof(message->data), message->data);
+                state = &(actor_info->state);
+                pthread_mutex_unlock(&actor_array_mutex);
+                role->prompts[MSG_HELLO](state, sizeof(*data), data);
             }
             else {
+                actor_info = &actors[id];
+                pthread_mutex_unlock(&actor_array_mutex);
+
                 if (message->message_type >= (long)role->nprompts) {
                     printf("Unknown message type: %ld\n", message->message_type);
                     continue;
                 }
-                role->prompts[message->message_type](&(actor_info->state), sizeof(message->data), message->data);
+                role->prompts[type](state, sizeof(*data), data);
             }
         }
 
