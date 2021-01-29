@@ -3,8 +3,8 @@ project (CACTI)
 
 enable_testing()
 
-#set(CMAKE_C_STANDARD ...)
 set(CMAKE_C_FLAGS "-g -Wall -Wextra -pthread")
+set(CMAKE_CXX_FLAGS "-g -Wall -Wextra -pthread")
 
 # http://stackoverflow.com/questions/10555706/
 macro (add_executable _name)

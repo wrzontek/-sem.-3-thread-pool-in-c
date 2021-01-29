@@ -7,17 +7,15 @@
 #IncludeRegexTransform: 
 
 /cygdrive/c/Users/Adi/Desktop/am418419/cacti.h
-pthread.h
+
+/cygdrive/c/Users/Adi/Desktop/am418419/silnia.c
+unistd.h
 -
-stdbool.h
+pthread.h
 -
 stdio.h
 -
 stdlib.h
--
-
-/cygdrive/c/Users/Adi/Desktop/am418419/silnia.c
-unistd.h
 -
 cacti.h
 /cygdrive/c/Users/Adi/Desktop/am418419/cacti.h

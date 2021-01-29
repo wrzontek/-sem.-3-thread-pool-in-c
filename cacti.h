@@ -3,6 +3,8 @@
 
 typedef long message_type_t;
 
+#include <stddef.h>
+
 #define MSG_SPAWN (message_type_t)0x06057a6e
 #define MSG_GODIE (message_type_t)0x60bedead
 #define MSG_HELLO (message_type_t)0x0

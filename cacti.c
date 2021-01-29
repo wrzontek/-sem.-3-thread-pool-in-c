@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include "cacti.h"
 
 static bool interrupted;
@@ -145,11 +146,6 @@ static void *pool_worker() {
 
             actor_info = &actors[id];
 
-            if (actor_info->dead) {
-                pthread_mutex_unlock(&actor_array_mutex);
-                continue;
-            }
-
             pthread_setspecific(actor_key, (void *)(&id));
 
             message = &actor_info->queue[actor_info->take_from];
@@ -200,14 +196,8 @@ static void *pool_worker() {
                 //pthread_mutex_lock(&actor_array_mutex);
                 actor_info = &actors[id];
                 actor_info->dead = true;
-                dead_actor_count++;
 
                 //printf("%ld   %ld %ld\n", actor_count - dead_actor_count, dead_actor_count, actor_count);
-
-                if (dead_actor_count == actor_count) {
-                    pool->stop = true;
-                    pthread_cond_broadcast(&(pool->work_cond));
-                }
 
                 pthread_mutex_unlock(&actor_array_mutex);
             }
@@ -234,6 +224,14 @@ static void *pool_worker() {
         if (actor_info->in_queue > 0)
             pthread_cond_broadcast(&(pool->work_cond));
 
+        else if (actor_info->dead) {
+            dead_actor_count++;
+            if (dead_actor_count == actor_count) {
+                pool->stop = true;
+                pthread_cond_broadcast(&(pool->work_cond));
+            }
+        }
+
         pthread_mutex_unlock(&actor_array_mutex);
     }
 
@@ -254,6 +252,7 @@ static void *SIGINT_catcher() {
     sigemptyset(&block_mask);
     sigaddset(&block_mask, SIGINT);
     sigaddset(&block_mask, SIGRTMIN + 1);
+    sigprocmask(SIG_BLOCK, &block_mask, 0);
 
     int sig;
     sigwait(&block_mask, &sig);
@@ -292,7 +291,7 @@ int actor_system_create(actor_id_t *actor, role_t *const role) {
 
     sigset_t set;
     sigfillset(&set);
-    if (pthread_sigmask(SIG_BLOCK, &set, NULL) != 0)
+    if (pthread_sigmask(SIG_SETMASK, &set, NULL) != 0)
         return -1;
 
     actors_array_size = 1000;
@@ -369,6 +368,13 @@ static void actor_system_clear_memory() {
 }
 
 void actor_system_join(actor_id_t actor) {
+    pthread_mutex_lock(&actor_array_mutex);
+    if (actor >= actor_count) {
+        printf("Actor with id %ld doesn't exist\n", actor);
+        return;
+    }
+    pthread_mutex_unlock(&actor_array_mutex);
+
     if (pool == NULL)
         return;
 
@@ -379,6 +385,7 @@ void actor_system_join(actor_id_t actor) {
         else
             break;
     }
+
     pthread_mutex_unlock(&(pool->work_mutex));
 
     actor_system_clear_memory();
