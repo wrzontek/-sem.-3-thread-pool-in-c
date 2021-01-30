@@ -255,48 +255,6 @@
 					<DistClean command="/usr/bin/make.exe -j4 -f &quot;/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
-			<Target title="err">
-				<Option output="/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/liberr.a" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug"/>
-				<Option object_output="./"/>
-				<Option type="2"/>
-				<Option compiler="gcc"/>
-				<Compiler>
-					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/10/include/c++"/>
-					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/10/include/c++/x86_64-pc-cygwin"/>
-					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/10/include/c++/backward"/>
-					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/10/include"/>
-					<Add directory="/usr/include"/>
-					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/10/../../../../lib/../include/w32api"/>
-				</Compiler>
-				<MakeCommands>
-					<Build command="/usr/bin/make.exe -j4 -f &quot;/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/Makefile&quot;  VERBOSE=1 err"/>
-					<CompileFile command="/usr/bin/make.exe -j4 -f &quot;/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make.exe -j4 -f &quot;/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make.exe -j4 -f &quot;/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-				</MakeCommands>
-			</Target>
-			<Target title="err/fast">
-				<Option output="/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/liberr.a" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug"/>
-				<Option object_output="./"/>
-				<Option type="2"/>
-				<Option compiler="gcc"/>
-				<Compiler>
-					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/10/include/c++"/>
-					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/10/include/c++/x86_64-pc-cygwin"/>
-					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/10/include/c++/backward"/>
-					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/10/include"/>
-					<Add directory="/usr/include"/>
-					<Add directory="/usr/lib/gcc/x86_64-pc-cygwin/10/../../../../lib/../include/w32api"/>
-				</Compiler>
-				<MakeCommands>
-					<Build command="/usr/bin/make.exe -j4 -f &quot;/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/Makefile&quot;  VERBOSE=1 err/fast"/>
-					<CompileFile command="/usr/bin/make.exe -j4 -f &quot;/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make.exe -j4 -f &quot;/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make.exe -j4 -f &quot;/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-				</MakeCommands>
-			</Target>
 			<Target title="test_empty">
 				<Option output="/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/test/test_empty.exe" prefix_auto="0" extension_auto="0"/>
 				<Option working_dir="/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/test"/>
@@ -350,12 +308,6 @@
 		</Unit>
 		<Unit filename="/cygdrive/c/Users/Adi/Desktop/am418419/chaos.cpp">
 			<Option target="chaos"/>
-		</Unit>
-		<Unit filename="/cygdrive/c/Users/Adi/Desktop/am418419/err.c">
-			<Option target="err"/>
-		</Unit>
-		<Unit filename="/cygdrive/c/Users/Adi/Desktop/am418419/err.h">
-			<Option target="err"/>
 		</Unit>
 		<Unit filename="/cygdrive/c/Users/Adi/Desktop/am418419/macierz.c">
 			<Option target="macierz"/>

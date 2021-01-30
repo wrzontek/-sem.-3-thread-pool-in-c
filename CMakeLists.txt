@@ -15,7 +15,6 @@ macro (add_executable _name)
   endif()
 endmacro()
 
-add_library(err err.c)
 add_library(cacti STATIC cacti.c)
 add_executable(macierz macierz.c)
 add_executable(silnia silnia.c)

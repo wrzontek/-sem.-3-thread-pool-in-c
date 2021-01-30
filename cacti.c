@@ -11,6 +11,16 @@
 
 static bool interrupted;
 
+static inline void lock_mutex(pthread_mutex_t *mutex) {
+    if (pthread_mutex_lock(mutex) != 0)
+        exit(1);
+}
+
+static inline void unlock_mutex(pthread_mutex_t *mutex) {
+    if (pthread_mutex_unlock(mutex) != 0)
+        exit(1);
+}
+
 struct actor_info {
     actor_id_t      id;
     bool            dead;
@@ -85,7 +95,7 @@ static bool pool_add_work(actor_id_t id) {
     if (work == NULL)
         return false;
 
-    pthread_mutex_lock(&(pool->work_mutex));
+    lock_mutex(&(pool->work_mutex));
     if (pool->work_first == NULL) {
         pool->work_first = work;
         pool->work_last = pool->work_first;
@@ -94,8 +104,9 @@ static bool pool_add_work(actor_id_t id) {
         pool->work_last = work;
     }
 
-    pthread_cond_broadcast(&(pool->work_cond));
-    pthread_mutex_unlock(&(pool->work_mutex));
+    if (pthread_cond_broadcast(&(pool->work_cond)) != 0)
+        exit(1);
+    unlock_mutex(&(pool->work_mutex));
 
     return true;
 }
@@ -128,25 +139,27 @@ static void *pool_worker() {
     role_t       *role;
 
     while (true) {
-        pthread_mutex_lock(&(pool->work_mutex));
+        lock_mutex(&(pool->work_mutex));
         while (pool->work_first == NULL && !pool->stop)
-            pthread_cond_wait(&(pool->work_cond), &(pool->work_mutex));
+            if (pthread_cond_wait(&(pool->work_cond), &(pool->work_mutex)) != 0)
+                exit(1);
 
         if (pool->stop)
             break;
 
         work = pool_work_get();
-        pthread_mutex_unlock(&(pool->work_mutex));
+        unlock_mutex(&(pool->work_mutex));
 
         if (work != NULL) {
             actor_id_t id = work->id;
             pool_work_destroy(work);
 
-            pthread_mutex_lock(&actor_array_mutex);
+            lock_mutex(&actor_array_mutex);
 
             actor_info = &actors[id];
 
-            pthread_setspecific(actor_key, (void *)(&id));
+            if (pthread_setspecific(actor_key, (void *) (&id)) != 0)
+                exit(1);
 
             message = &actor_info->queue[actor_info->take_from];
             role = actor_info->role;
@@ -159,10 +172,10 @@ static void *pool_worker() {
             //printf("robota aktora o id %ld wzięta z %d type = %ld\n",
             //       id, actor_info->take_from - 1, message->message_type);
 
-            //pthread_mutex_unlock(&actor_array_mutex);
+            //unlock_mutex(&actor_array_mutex);
 
             if (type == MSG_SPAWN) {
-                //pthread_mutex_lock(&actor_array_mutex);
+                //lock_mutex(&actor_array_mutex);
 
                 if (actor_count < CAST_LIMIT && !interrupted) {
                     if (actor_count == actors_array_size) {
@@ -171,9 +184,9 @@ static void *pool_worker() {
                             if (actors_array_size > CAST_LIMIT || actors_array_size < 0) // in case of overflow
                                 actors_array_size = CAST_LIMIT;
 
-                            pthread_mutex_lock(&pool->work_mutex);
+                            lock_mutex(&pool->work_mutex);
                             actors = realloc(actors, actors_array_size * sizeof(actor_info_t));
-                            pthread_mutex_unlock(&pool->work_mutex);
+                            unlock_mutex(&pool->work_mutex);
                         }
                     }
 
@@ -187,57 +200,58 @@ static void *pool_worker() {
                     hello_message.data = (void *) (&actor_info->id);
                     hello_message.nbytes = sizeof(*hello_message.data);
 
-                    pthread_mutex_unlock(&actor_array_mutex);
+                    unlock_mutex(&actor_array_mutex);
                     send_message(send_to_id, hello_message);
                 } else
-                    pthread_mutex_unlock(&actor_array_mutex);
-            }
-            else if (type == MSG_GODIE) {
-                //pthread_mutex_lock(&actor_array_mutex);
+                    unlock_mutex(&actor_array_mutex);
+            } else if (type == MSG_GODIE) {
+                //lock_mutex(&actor_array_mutex);
                 actor_info = &actors[id];
                 actor_info->dead = true;
 
                 //printf("%ld   %ld %ld\n", actor_count - dead_actor_count, dead_actor_count, actor_count);
 
-                pthread_mutex_unlock(&actor_array_mutex);
-            }
-            else if (type == MSG_HELLO) {
+                unlock_mutex(&actor_array_mutex);
+            } else if (type == MSG_HELLO) {
                 actor_info = &actors[id];
                 actor_info->state = NULL;
                 state = &(actor_info->state);
-                pthread_mutex_unlock(&actor_array_mutex);
+                unlock_mutex(&actor_array_mutex);
                 role->prompts[MSG_HELLO](state, sizeof(*data), data);
-            }
-            else {
+            } else {
                 actor_info = &actors[id];
-                pthread_mutex_unlock(&actor_array_mutex);
+                unlock_mutex(&actor_array_mutex);
 
-                if (message->message_type >= (long)role->nprompts) {
+                if (message->message_type >= (long) role->nprompts) {
                     printf("Unknown message type: %ld\n", message->message_type);
                     continue;
                 }
                 role->prompts[type](state, sizeof(*data), data);
             }
-        }
 
-        pthread_mutex_lock(&actor_array_mutex);
-        if (actor_info->in_queue > 0)
-            pthread_cond_broadcast(&(pool->work_cond));
 
-        else if (actor_info->dead) {
-            dead_actor_count++;
-            if (dead_actor_count == actor_count) {
-                pool->stop = true;
-                pthread_cond_broadcast(&(pool->work_cond));
+            lock_mutex(&actor_array_mutex);
+            if (actor_info->in_queue > 0) {
+                if (pthread_cond_broadcast(&(pool->work_cond)) != 0)
+                    exit(1);
             }
-        }
+            else if (actor_info->dead) {
+                dead_actor_count++;
+                if (dead_actor_count == actor_count) {
+                    pool->stop = true;
+                    if (pthread_cond_broadcast(&(pool->work_cond)) != 0)
+                        exit(1);
+                }
+            }
 
-        pthread_mutex_unlock(&actor_array_mutex);
+            unlock_mutex(&actor_array_mutex);
+        }
     }
 
     pool->thread_cnt--;
-    pthread_cond_signal(&(pool->dead_cond));
-    pthread_mutex_unlock(&(pool->work_mutex));
+    if (pthread_cond_signal(&(pool->dead_cond)) != 0)
+        exit(1);
+    unlock_mutex(&(pool->work_mutex));
     return NULL;
 }
 
@@ -252,13 +266,14 @@ static void *SIGINT_catcher() {
     sigemptyset(&block_mask);
     sigaddset(&block_mask, SIGINT);
     sigaddset(&block_mask, SIGRTMIN + 1);
-    sigprocmask(SIG_BLOCK, &block_mask, 0);
+    if (sigprocmask(SIG_BLOCK, &block_mask, 0) != 0)
+        exit(1);
 
     int sig;
     sigwait(&block_mask, &sig);
 
     if (sig == SIGINT) { // if sig == SIGRTMIN do nothing, just end
-        pthread_mutex_lock(&actor_array_mutex);
+        lock_mutex(&actor_array_mutex);
         interrupted = true;
 
         for (actor_id_t actor = 0; actor < actor_count; actor++) {
@@ -274,7 +289,7 @@ static void *SIGINT_catcher() {
             }
         }
 
-        pthread_mutex_unlock(&actor_array_mutex);
+        unlock_mutex(&actor_array_mutex);
     }
 
 
@@ -316,7 +331,8 @@ int actor_system_create(actor_id_t *actor, role_t *const role) {
     if (pthread_cond_init(&(pool->dead_cond), NULL) != 0)
         return -1;
 
-    pthread_key_create(&actor_key, NULL);
+    if (pthread_key_create(&actor_key, NULL) != 0)
+        exit(1);
 
     for (int i = 0; i < POOL_SIZE; i++)
         if (pthread_create(&threads[i + 1], NULL, pool_worker, NULL) != 0)
@@ -343,12 +359,13 @@ static void actor_system_clear_memory() {
         work = work2;
     }
 
-    pthread_mutex_lock(&actor_array_mutex);
+    lock_mutex(&actor_array_mutex);
 
     if (!interrupted)
-        pthread_kill(threads[0], SIGRTMIN + 1);
+        if (pthread_kill(threads[0], SIGRTMIN + 1) != 0)
+            exit(1);
 
-    pthread_mutex_unlock(&actor_array_mutex);
+    unlock_mutex(&actor_array_mutex);
 
     for (int i = 0; i < POOL_SIZE + 1; i++)
         pthread_join(threads[i], NULL);
@@ -368,46 +385,48 @@ static void actor_system_clear_memory() {
 }
 
 void actor_system_join(actor_id_t actor) {
-    pthread_mutex_lock(&actor_array_mutex);
+    lock_mutex(&actor_array_mutex);
     if (actor >= actor_count) {
         printf("Actor with id %ld doesn't exist\n", actor);
         return;
     }
-    pthread_mutex_unlock(&actor_array_mutex);
+    unlock_mutex(&actor_array_mutex);
 
     if (pool == NULL)
         return;
 
-    pthread_mutex_lock(&(pool->work_mutex));
+    lock_mutex(&(pool->work_mutex));
     while (true) {
-        if (pool->thread_cnt != 0)
-            pthread_cond_wait(&(pool->dead_cond), &(pool->work_mutex));
+        if (pool->thread_cnt != 0) {
+            if (pthread_cond_wait(&(pool->dead_cond), &(pool->work_mutex)) != 0)
+                exit(1);
+        }
         else
             break;
     }
 
-    pthread_mutex_unlock(&(pool->work_mutex));
+    unlock_mutex(&(pool->work_mutex));
 
     actor_system_clear_memory();
 }
 
 int send_message(actor_id_t actor, message_t message) {
-    pthread_mutex_lock(&actor_array_mutex);
+    lock_mutex(&actor_array_mutex);
 
     if (interrupted) {
-        pthread_mutex_unlock(&actor_array_mutex);
+        unlock_mutex(&actor_array_mutex);
         return 0;
     }
 
     if (actor >= actor_count) {
-        pthread_mutex_unlock(&actor_array_mutex);
+        unlock_mutex(&actor_array_mutex);
         return -2;
     }
 
     actor_info_t *actor_info = &actors[actor];
 
     if (actor_info->dead) {
-        pthread_mutex_unlock(&actor_array_mutex);
+        unlock_mutex(&actor_array_mutex);
         return -1;
     }
 
@@ -416,11 +435,11 @@ int send_message(actor_id_t actor, message_t message) {
         actor_info->queue[place_at] = message;
         actor_info->in_queue++;
     } else {
-        pthread_mutex_unlock(&actor_array_mutex);
+        unlock_mutex(&actor_array_mutex);
         return -3;
     }
 
-    pthread_mutex_unlock(&actor_array_mutex);
+    unlock_mutex(&actor_array_mutex);
 
     pool_add_work(actor);
     return 0;

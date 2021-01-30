@@ -240,19 +240,6 @@ cacti/fast:
 .PHONY : cacti/fast
 
 #=============================================================================
-# Target rules for targets named err
-
-# Build rule for target.
-err: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 err
-.PHONY : err
-
-# fast build rule for target.
-err/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/err.dir/build.make CMakeFiles/err.dir/build
-.PHONY : err/fast
-
-#=============================================================================
 # Target rules for targets named test_empty
 
 # Build rule for target.
@@ -318,33 +305,6 @@ chaos.s: chaos.cpp.s
 chaos.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/chaos.dir/build.make CMakeFiles/chaos.dir/chaos.cpp.s
 .PHONY : chaos.cpp.s
-
-err.o: err.c.o
-
-.PHONY : err.o
-
-# target to build an object file
-err.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/err.dir/build.make CMakeFiles/err.dir/err.c.o
-.PHONY : err.c.o
-
-err.i: err.c.i
-
-.PHONY : err.i
-
-# target to preprocess a source file
-err.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/err.dir/build.make CMakeFiles/err.dir/err.c.i
-.PHONY : err.c.i
-
-err.s: err.c.s
-
-.PHONY : err.s
-
-# target to generate assembly for a file
-err.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/err.dir/build.make CMakeFiles/err.dir/err.c.s
-.PHONY : err.c.s
 
 macierz.o: macierz.c.o
 
@@ -415,7 +375,6 @@ help:
 	@echo "... test"
 	@echo "... cacti"
 	@echo "... chaos"
-	@echo "... err"
 	@echo "... macierz"
 	@echo "... silnia"
 	@echo "... test_empty"
@@ -425,9 +384,6 @@ help:
 	@echo "... chaos.o"
 	@echo "... chaos.i"
 	@echo "... chaos.s"
-	@echo "... err.o"
-	@echo "... err.i"
-	@echo "... err.s"
 	@echo "... macierz.o"
 	@echo "... macierz.i"
 	@echo "... macierz.s"

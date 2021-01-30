@@ -9,7 +9,6 @@
 /cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/CMakeFiles/silnia.dir
 /cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/CMakeFiles/macierz.dir
 /cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/CMakeFiles/cacti.dir
-/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/CMakeFiles/err.dir
 /cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/test/CMakeFiles/install/strip.dir
 /cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/test/CMakeFiles/install/local.dir
 /cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/test/CMakeFiles/install.dir

@@ -77,7 +77,6 @@ all: CMakeFiles/chaos.dir/all
 all: CMakeFiles/silnia.dir/all
 all: CMakeFiles/macierz.dir/all
 all: CMakeFiles/cacti.dir/all
-all: CMakeFiles/err.dir/all
 all: test/all
 
 .PHONY : all
@@ -92,7 +91,6 @@ clean: CMakeFiles/chaos.dir/clean
 clean: CMakeFiles/silnia.dir/clean
 clean: CMakeFiles/macierz.dir/clean
 clean: CMakeFiles/cacti.dir/clean
-clean: CMakeFiles/err.dir/clean
 clean: test/clean
 
 .PHONY : clean
@@ -149,7 +147,7 @@ CMakeFiles/chaos.dir/clean:
 CMakeFiles/silnia.dir/all: CMakeFiles/cacti.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/silnia.dir/build.make CMakeFiles/silnia.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/silnia.dir/build.make CMakeFiles/silnia.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/CMakeFiles --progress-num=9,10 "Built target silnia"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/CMakeFiles --progress-num=7,8 "Built target silnia"
 .PHONY : CMakeFiles/silnia.dir/all
 
 # Build rule for subdir invocation for target.
@@ -176,7 +174,7 @@ CMakeFiles/silnia.dir/clean:
 CMakeFiles/macierz.dir/all: CMakeFiles/cacti.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/macierz.dir/build.make CMakeFiles/macierz.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/macierz.dir/build.make CMakeFiles/macierz.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/CMakeFiles --progress-num=7,8 "Built target macierz"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/CMakeFiles --progress-num=5,6 "Built target macierz"
 .PHONY : CMakeFiles/macierz.dir/all
 
 # Build rule for subdir invocation for target.
@@ -224,40 +222,13 @@ CMakeFiles/cacti.dir/clean:
 .PHONY : CMakeFiles/cacti.dir/clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/err.dir
-
-# All Build rule for target.
-CMakeFiles/err.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/err.dir/build.make CMakeFiles/err.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/err.dir/build.make CMakeFiles/err.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/CMakeFiles --progress-num=5,6 "Built target err"
-.PHONY : CMakeFiles/err.dir/all
-
-# Build rule for subdir invocation for target.
-CMakeFiles/err.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/CMakeFiles 2
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/err.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/CMakeFiles 0
-.PHONY : CMakeFiles/err.dir/rule
-
-# Convenience name for target.
-err: CMakeFiles/err.dir/rule
-
-.PHONY : err
-
-# clean rule for target.
-CMakeFiles/err.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/err.dir/build.make CMakeFiles/err.dir/clean
-.PHONY : CMakeFiles/err.dir/clean
-
-#=============================================================================
 # Target rules for target test/CMakeFiles/test_empty.dir
 
 # All Build rule for target.
 test/CMakeFiles/test_empty.dir/all: CMakeFiles/cacti.dir/all
 	$(MAKE) $(MAKESILENT) -f test/CMakeFiles/test_empty.dir/build.make test/CMakeFiles/test_empty.dir/depend
 	$(MAKE) $(MAKESILENT) -f test/CMakeFiles/test_empty.dir/build.make test/CMakeFiles/test_empty.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/CMakeFiles --progress-num=11,12 "Built target test_empty"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/cygdrive/c/Users/Adi/Desktop/am418419/cmake-build-debug/CMakeFiles --progress-num=9,10 "Built target test_empty"
 .PHONY : test/CMakeFiles/test_empty.dir/all
 
 # Build rule for subdir invocation for target.
